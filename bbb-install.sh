@@ -848,22 +848,28 @@ server {
   listen [::]:443 ssl;
   server_name $HOST;
 
-    ssl_certificate /etc/letsencrypt/live/$HOST/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/$HOST/privkey.pem;
-    ssl_session_cache shared:SSL:10m;
-    ssl_session_timeout 10m;
-    ssl_protocols TLSv1.2;
-    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384;
-    ssl_prefer_server_ciphers on;
-    ssl_dhparam /etc/nginx/ssl/dhp-4096.pem;
+  # ssl certificates
+  ssl_certificate /etc/letsencrypt/live/$HOST/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/$HOST/privkey.pem;
+  ssl_session_cache shared:SSL:10m;
+  ssl_session_timeout 1d;
     
-    # HSTS (comment out to enable)
-    #add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+  # intermediate configuration
+  ssl_protocols TLSv1.2;
+  ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384;
+  ssl_prefer_server_ciphers off;
+
+  # HSTS (ngx_http_headers_module is required) (63072000 seconds)
+  # add_header Strict-Transport-Security "max-age=63072000" always;
+
+  # OCSP stapling
+  ssl_stapling on;
+  ssl_stapling_verify on;
 
   access_log  /var/log/nginx/bigbluebutton.access.log;
 
-   # Handle RTMPT (RTMP Tunneling).  Forwards requests
-   # to Red5 on port 5080
+    # Handle RTMPT (RTMP Tunneling).  Forwards requests
+    # to Red5 on port 5080
   location ~ (/open/|/close/|/idle/|/send/|/fcs/) {
     proxy_pass         http://127.0.0.1:5080;
     proxy_redirect     off;
@@ -883,19 +889,19 @@ server {
   # Handle desktop sharing tunneling.  Forwards
   # requests to Red5 on port 5080.
   location /deskshare {
-     proxy_pass         http://127.0.0.1:5080;
-     proxy_redirect     default;
-     proxy_set_header   X-Forwarded-For   \$proxy_add_x_forwarded_for;
-     client_max_body_size       10m;
-     client_body_buffer_size    128k;
-     proxy_connect_timeout      90;
-     proxy_send_timeout         90;
-     proxy_read_timeout         90;
-     proxy_buffer_size          4k;
-     proxy_buffers              4 32k;
-     proxy_busy_buffers_size    64k;
-     proxy_temp_file_write_size 64k;
-     include    fastcgi_params;
+    proxy_pass         http://127.0.0.1:5080;
+    proxy_redirect     default;
+    proxy_set_header   X-Forwarded-For   \$proxy_add_x_forwarded_for;
+    client_max_body_size       10m;
+    client_body_buffer_size    128k;
+    proxy_connect_timeout      90;
+    proxy_send_timeout         90;
+    proxy_read_timeout         90;
+    proxy_buffer_size          4k;
+    proxy_buffers              4 32k;
+    proxy_busy_buffers_size    64k;
+    proxy_temp_file_write_size 64k;
+    include    fastcgi_params;
   }
 
   # BigBlueButton landing page.
